@@ -57,7 +57,7 @@ const t88Snippet = `fun parse(packet: ByteArray): MatrixMessage {
           <ol class="proj__steps">
             <li><strong>Base model.</strong> I merged three public datasets into one 3-class set (crosswalk, pedestrian, car; 13,176 images) and trained YOLO26n on it.</li>
             <li><strong>Measured on held-out data.</strong> On the 1,527-image test split it never saw: mAP50 <strong>0.86</strong>, mAP50-95 0.66. Crosswalks (0.93) and pedestrians (0.92) are strong; cars are the weak class (0.74, recall 0.61).</li>
-            <li><strong>Adapted to the target camera.</strong> 433 frames from the intersection, pseudo-labelled by larger models, used to fine-tune YOLO26s with a motorcycle class.</li>
+            <li><strong>Adapted to the target camera.</strong> 433 frames from the intersection, auto-labelled with a larger model and then corrected by hand (missed objects, wrong boxes), used to fine-tune YOLO26s with a motorcycle class.</li>
           </ol>
           <p class="small muted proj__honest">
             Honest limits: the fine-tuned model was validated on its own training frames, so I only quote the base model's test numbers.
