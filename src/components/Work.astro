@@ -55,12 +55,12 @@ const t88Snippet = `fun parse(packet: ByteArray): MatrixMessage {
           <h3>Pedestrian-crossing violation detection</h3>
           <p class="muted">A detector plus rules: ByteTrack follows each vehicle, and a car on a crosswalk while a pedestrian is there gets flagged.</p>
           <ol class="proj__steps">
-            <li><strong>Base model.</strong> I merged three public datasets into one 3-class set (crosswalk, pedestrian, car; 13,176 images) and trained YOLO26n on it.</li>
+            <li><strong>A general model.</strong> I merged three public datasets into one 3-class set (crosswalk, pedestrian, car; 13,176 images) and trained YOLO26n on it.</li>
             <li><strong>Measured on held-out data.</strong> On the 1,527-image test split it never saw: mAP50 <strong>0.86</strong>, mAP50-95 0.66. Crosswalks (0.93) and pedestrians (0.92) are strong; cars are the weak class (0.74, recall 0.61).</li>
-            <li><strong>Adapted to the target camera.</strong> 433 frames from the intersection, auto-labelled with a larger model and then corrected by hand (missed objects, wrong boxes), used to fine-tune YOLO26s with a motorcycle class.</li>
+            <li><strong>A camera-specific model.</strong> For the violation system I trained a second model, YOLO26s from COCO weights, on 433 frames of the target intersection: auto-labelled with a larger model, then corrected by hand (missed objects, wrong boxes, crosswalks), with a motorcycle class added. This is the model in the video.</li>
           </ol>
           <p class="small muted proj__honest">
-            Honest limits: the fine-tuned model was validated on its own training frames, so I only quote the base model's test numbers.
+            Honest limits: the camera-specific model was validated on its own training frames, so I only quote the general model's test numbers.
             And the rule counts a pedestrian waiting at the curb as "on the crossing", so it flags more than a human would.
           </p>
           <p class="small muted">Datasets (CC BY 4.0, Roboflow Universe):{' '}
@@ -77,7 +77,7 @@ const t88Snippet = `fun parse(packet: ByteArray): MatrixMessage {
             public live stream of Sukhumvit Road, Bangkok (9-second excerpt, detections drawn by my model).
           </figcaption>
           <div class="classes" role="figure" aria-labelledby="cls-title">
-            <p id="cls-title" class="classes__title small">Base model, held-out test split (1,527 images): mAP50 by class</p>
+            <p id="cls-title" class="classes__title small">General model, held-out test split (1,527 images): mAP50 by class</p>
             {[
               { n: 'Crosswalk', v: 0.929 },
               { n: 'Pedestrian', v: 0.916 },
