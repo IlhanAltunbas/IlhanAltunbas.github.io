@@ -21,6 +21,9 @@ jobs:
       - uses: actions/checkout@v4
       - name: Build with Astro
         uses: withastro/action@v3
+        with:
+          # Astro 7, Node >= 22.12 istiyor; eylemin varsayılanı daha eski.
+          node-version: 22
         env:
           # Canlı demonun anahtarı: Settings → Secrets and variables → Actions → DUS_API_KEY
           PUBLIC_DUS_API_KEY: ${{ secrets.DUS_API_KEY }}
