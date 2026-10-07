@@ -53,10 +53,20 @@ const t88Snippet = `fun parse(packet: ByteArray): MatrixMessage {
         <div class="proj__body">
           <p class="proj__meta mono">Final-year project · 2026</p>
           <h3>Pedestrian-crossing violation detection</h3>
-          <p class="muted">A YOLO26 model I trained on 433 frames I labelled myself (crosswalk, pedestrian, car, motorcycle), plus rules on top: ByteTrack follows each vehicle, and a car on a crosswalk while a pedestrian is there is flagged.</p>
+          <p class="muted">A detector plus rules: ByteTrack follows each vehicle, and a car on a crosswalk while a pedestrian is there gets flagged.</p>
+          <ol class="proj__steps">
+            <li><strong>Base model.</strong> I merged three public datasets into one 3-class set (crosswalk, pedestrian, car; 13,176 images) and trained YOLO26n on it.</li>
+            <li><strong>Measured on held-out data.</strong> On the 1,527-image test split it never saw: mAP50 <strong>0.86</strong>, mAP50-95 0.66. Crosswalks (0.93) and pedestrians (0.92) are strong; cars are the weak class (0.74, recall 0.61).</li>
+            <li><strong>Adapted to the target camera.</strong> 433 frames from the intersection, pseudo-labelled by larger models, used to fine-tune YOLO26s with a motorcycle class.</li>
+          </ol>
           <p class="small muted proj__honest">
-            Honest limits: the rule counts a pedestrian waiting at the curb as "on the crossing", so it flags more than a human would,
-            and I don't quote accuracy numbers because the model was validated on its own training frames. Next step: a held-out test video.
+            Honest limits: the fine-tuned model was validated on its own training frames, so I only quote the base model's test numbers.
+            And the rule counts a pedestrian waiting at the curb as "on the crossing", so it flags more than a human would.
+          </p>
+          <p class="small muted">Datasets (CC BY 4.0, Roboflow Universe):
+            <a href="https://universe.roboflow.com/tcc-xn3st/crosswalk-djojj" rel="noopener">crosswalk</a>,
+            <a href="https://universe.roboflow.com/leonid-kngrd/pedestrian-detector" rel="noopener">pedestrian</a>,
+            <a href="https://universe.roboflow.com/drink-tracker/car-detection-pn2gk" rel="noopener">car</a>.
           </p>
         </div>
         <figure class="media">
@@ -104,6 +114,8 @@ const t88Snippet = `fun parse(packet: ByteArray): MatrixMessage {
   .proj__meta { font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.06em; color: var(--ink-3); }
   .proj__list { margin: 0; padding-left: 1.1em; color: var(--ink-2); font-size: 0.9375rem; display: grid; gap: 4px; }
   .proj__honest { padding-left: 12px; border-left: 2px solid var(--accent); }
+  .proj__steps { margin: 0; padding-left: 1.2em; display: grid; gap: 6px; font-size: 0.9375rem; color: var(--ink-2); }
+  .proj__steps strong { color: var(--ink); font-weight: 600; }
   .proj__link { display: inline-flex; align-items: center; min-height: 44px; font-weight: 600; }
   .proj__links { display: flex; gap: 20px; }
 
