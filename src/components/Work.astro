@@ -63,16 +63,33 @@ const t88Snippet = `fun parse(packet: ByteArray): MatrixMessage {
             Honest limits: the fine-tuned model was validated on its own training frames, so I only quote the base model's test numbers.
             And the rule counts a pedestrian waiting at the curb as "on the crossing", so it flags more than a human would.
           </p>
-          <p class="small muted">Datasets (CC BY 4.0, Roboflow Universe):
-            <a href="https://universe.roboflow.com/tcc-xn3st/crosswalk-djojj" rel="noopener">crosswalk</a>,
-            <a href="https://universe.roboflow.com/leonid-kngrd/pedestrian-detector" rel="noopener">pedestrian</a>,
+          <p class="small muted">Datasets (CC BY 4.0, Roboflow Universe):{' '}
+            <a href="https://universe.roboflow.com/tcc-xn3st/crosswalk-djojj" rel="noopener">crosswalk</a>,{' '}
+            <a href="https://universe.roboflow.com/leonid-kngrd/pedestrian-detector" rel="noopener">pedestrian</a>,{' '}
             <a href="https://universe.roboflow.com/drink-tracker/car-detection-pn2gk" rel="noopener">car</a>.
           </p>
         </div>
         <figure class="media">
           <video src="/media/yolo-crossing.mp4" poster="/media/yolo-crossing-poster.jpg" muted loop playsinline autoplay preload="none"
             aria-label="Detection output on a busy intersection: boxes around cars and pedestrians, flagged cars in red"></video>
-          <figcaption class="small muted">Prototype output on public webcam footage.</figcaption>
+          <figcaption class="small muted">
+            Prototype output of the violation rules. Footage:{' '}<a href="https://www.youtube.com/watch?v=Q71sLS8h9a4" rel="noopener">The Real Samui Webcam</a>,
+            public live stream of Sukhumvit Road, Bangkok (9-second excerpt, detections drawn by my model).
+          </figcaption>
+          <div class="classes" role="figure" aria-labelledby="cls-title">
+            <p id="cls-title" class="classes__title small">Base model, held-out test split (1,527 images): mAP50 by class</p>
+            {[
+              { n: 'Crosswalk', v: 0.929 },
+              { n: 'Pedestrian', v: 0.916 },
+              { n: 'Car', v: 0.744 },
+            ].map((c) => (
+              <div class="classes__row">
+                <span class="classes__name">{c.n}</span>
+                <span class="classes__track"><span class="classes__bar" style={`width:${c.v * 100}%`}></span></span>
+                <span class="classes__val mono">{c.v.toFixed(2)}</span>
+              </div>
+            ))}
+          </div>
         </figure>
       </article>
 
@@ -124,6 +141,13 @@ const t88Snippet = `fun parse(packet: ByteArray): MatrixMessage {
   .code pre { margin: 0; padding: 16px; overflow-x: auto; font-family: var(--font-mono); font-size: 0.78rem; line-height: 1.6; }
 
   .media { margin: 0; display: grid; gap: 8px; }
+  .classes { margin-top: 12px; display: grid; gap: 8px; padding: 14px 16px; border-radius: var(--radius-sm); background: var(--surface-2); }
+  .classes__title { color: var(--ink-2); margin-bottom: 2px; }
+  .classes__row { display: grid; grid-template-columns: 84px 1fr 40px; align-items: center; gap: 10px; font-size: 0.875rem; }
+  .classes__track { height: 12px; border-radius: 0 4px 4px 0; background: transparent; }
+  .classes__bar { display: block; height: 100%; border-radius: 0 4px 4px 0; background: #2a78d6; }
+  .classes__val { text-align: right; color: var(--ink-2); font-size: 0.8125rem; font-variant-numeric: tabular-nums; }
+  @media (prefers-color-scheme: dark) { .classes__bar { background: #3987e5; } }
   .media video { width: 100%; border-radius: var(--radius-sm); background: var(--surface-2); aspect-ratio: 16 / 9; object-fit: cover; }
   .media--phone { justify-items: center; background: var(--surface-2); border-radius: var(--radius-sm); padding: 20px; }
   .media--phone video { width: auto; max-height: 420px; aspect-ratio: 360 / 805; border-radius: 18px; }
