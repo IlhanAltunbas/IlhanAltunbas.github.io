@@ -1,0 +1,26 @@
+---
+import Base from '../layouts/Base.astro';
+import Header from '../components/Header.astro';
+import Hero from '../components/Hero.astro';
+import Demo from '../components/Demo.astro';
+import Evaluation from '../components/Evaluation.astro';
+import Architecture from '../components/Architecture.astro';
+import Work from '../components/Work.astro';
+import Experience from '../components/Experience.astro';
+import Contact from '../components/Contact.astro';
+---
+<Base
+  title="Ilhan Altunbas · Junior AI Engineer (RAG, agents, LLM evaluation)"
+  description="Junior AI engineer in Belgium. A live RAG assistant on Azure, measured with an evaluation set: a LangGraph agent raised fully correct answers from 42% to 72%. Also Android and Kotlin Multiplatform."
+>
+  <Header />
+  <main id="main">
+    <Hero />
+    <Demo />
+    <Evaluation />
+    <Architecture />
+    <Work />
+    <Experience />
+  </main>
+  <Contact />
+</Base>

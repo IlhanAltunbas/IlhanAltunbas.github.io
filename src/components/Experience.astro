@@ -1,0 +1,40 @@
+---
+import { experience, education } from '../data/site';
+---
+<section class="section" aria-labelledby="exp-title">
+  <div class="wrap xp">
+    <div class="section-head">
+      <p class="eyebrow">Experience</p>
+      <h2 id="exp-title">Where I've worked</h2>
+    </div>
+    <ol class="xp__list">
+      {experience.map((e) => (
+        <li>
+          <p class="xp__period mono">{e.period}</p>
+          <div>
+            <h3>{e.org}</h3>
+            <p class="xp__role">{e.role}</p>
+            <p class="muted">{e.text}</p>
+          </div>
+        </li>
+      ))}
+      <li>
+        <p class="xp__period mono">{education.year}</p>
+        <div>
+          <h3>{education.school}</h3>
+          <p class="xp__role">{education.degree}</p>
+          <p class="muted">Relevant coursework: {education.courses}.</p>
+        </div>
+      </li>
+    </ol>
+  </div>
+</section>
+
+<style>
+  .xp__list { list-style: none; margin: 0; padding: 0; border-top: 1px solid var(--line); }
+  .xp__list li { display: grid; gap: 6px 32px; padding: 24px 0; border-bottom: 1px solid var(--line); }
+  @media (min-width: 760px) { .xp__list li { grid-template-columns: 180px 1fr; } }
+  .xp__period { font-size: 0.8125rem; color: var(--ink-3); padding-top: 3px; }
+  .xp__role { color: var(--ink-2); margin: 2px 0 8px; font-size: 0.9375rem; }
+  .xp__list .muted { max-width: 68ch; font-size: 0.9375rem; }
+</style>

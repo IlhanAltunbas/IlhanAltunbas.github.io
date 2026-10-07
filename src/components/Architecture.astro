@@ -1,0 +1,64 @@
+---
+import { repos } from '../data/site';
+
+// Mimari akış: soldan sağa (masaüstü), yukarıdan aşağıya (mobil). Kutular HTML; oklar CSS.
+const steps = [
+  { k: 'Clients', t: 'Kotlin Multiplatform app · this page', d: 'Compose Multiplatform, Ktor, Room for local chat history' },
+  { k: 'API', t: 'FastAPI on Azure Container Apps', d: 'App key, per-IP and global daily limits, errors as 503/500 with no internals' },
+  { k: 'Query', t: 'Follow-up rewriting', d: 'Questions like "which one is strongest?" are rewritten from the chat history first' },
+  { k: 'Agent', t: 'LangGraph, limits in code', d: 'Decides when and in which language to search; falls back to the fixed chain' },
+  { k: 'Retrieval', t: 'Azure AI Search', d: '7,198 passages from 4 textbooks, exhaustive vector search (HNSW missed the best chunk once)' },
+  { k: 'Generation', t: 'Azure OpenAI', d: 'Answers only from retrieved passages, in the language of the question; Claude swappable by config' },
+];
+const around = [
+  'GitHub Actions: pytest, ruff, Kotlin tests, Docker build on every push',
+  'Per-step latency logs and optional Langfuse tracing, without storing question text',
+  'Versioned image tags: rollback is one command',
+];
+---
+<section class="section" aria-labelledby="arch-title">
+  <div class="wrap">
+    <div class="section-head">
+      <p class="eyebrow">Case study · Architecture</p>
+      <h2 id="arch-title">What runs behind the demo</h2>
+      <p>Built to stay cheap and swappable: the LLM and the vector store sit behind interfaces, so changing provider is a configuration change.</p>
+    </div>
+
+    <ol class="flow">
+      {steps.map((s) => (
+        <li class="flow__step">
+          <span class="flow__k mono">{s.k}</span>
+          <strong>{s.t}</strong>
+          <span class="small muted">{s.d}</span>
+        </li>
+      ))}
+    </ol>
+
+    <ul class="around">
+      {around.map((a) => <li>{a}</li>)}
+    </ul>
+    <p class="small muted arch__src">Code and design notes: <a href={repos.dus} rel="noopener">github.com/IlhanAltunbas/DusAssistant</a></p>
+  </div>
+</section>
+
+<style>
+  .flow { list-style: none; margin: 0; padding: 0; display: grid; gap: 22px; grid-template-columns: 1fr; counter-reset: f; }
+  .flow__step {
+    position: relative; display: grid; gap: 6px; align-content: start;
+    padding: 18px; background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius-sm);
+  }
+  .flow__step strong { font-weight: 650; line-height: 1.3; }
+  .flow__k { font-size: 0.6875rem; text-transform: uppercase; letter-spacing: 0.08em; color: var(--accent-ink); }
+  /* Ok: mobilde aşağı, geniş ekranda sağa. */
+  .flow__step:not(:last-child)::after {
+    content: ''; position: absolute; left: 28px; bottom: -18px; width: 1px; height: 14px; background: var(--ink-3);
+  }
+  @media (min-width: 900px) {
+    .flow { grid-template-columns: repeat(3, 1fr); gap: 18px 28px; }
+    .flow__step:not(:last-child)::after { left: auto; right: -22px; top: 50%; bottom: auto; width: 16px; height: 1px; }
+    .flow__step:nth-child(3)::after { display: none; }
+  }
+  .around { list-style: none; padding: 0; margin: 28px 0 0; display: flex; flex-wrap: wrap; gap: 8px; }
+  .around li { padding: 8px 14px; border: 1px dashed var(--line); border-radius: 999px; font-size: 0.875rem; color: var(--ink-2); }
+  .arch__src { margin-top: 20px; }
+</style>

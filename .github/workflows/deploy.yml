@@ -1,0 +1,38 @@
+name: Deploy to GitHub Pages
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: pages
+  cancel-in-progress: false
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Build with Astro
+        uses: withastro/action@v3
+        env:
+          # Canlı demonun anahtarı: Settings → Secrets and variables → Actions → DUS_API_KEY
+          PUBLIC_DUS_API_KEY: ${{ secrets.DUS_API_KEY }}
+          PUBLIC_DUS_API_URL: https://dus-backend.wittysand-a01d0f70.francecentral.azurecontainerapps.io
+
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - name: Deploy
+        id: deployment
+        uses: actions/deploy-pages@v4

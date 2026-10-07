@@ -1,0 +1,63 @@
+---
+import { person, headline } from '../data/site';
+---
+<section class="hero wrap" id="top" aria-labelledby="hero-title">
+  <p class="eyebrow">{person.role} · Belgium</p>
+  <h1 id="hero-title" class="hero__title">I build AI products<br /> <em>and measure</em> whether they work.</h1>
+  <p class="hero__lead">
+    RAG, agents and LLM evaluation on Azure, with a background in Android and Kotlin Multiplatform.
+    My main project is running live below, so you can ask it something.
+  </p>
+
+  <div class="hero__cta">
+    <a class="btn btn--primary" href="#demo">Try the live demo</a>
+    <a class="hero__link" href={person.cv} download>Download CV</a>
+    <a class="hero__link" href={person.github} rel="noopener">GitHub</a>
+    <a class="hero__link" href={person.linkedin} rel="noopener">LinkedIn</a>
+  </div>
+
+  <ul class="hero__meta" aria-label="Availability">
+    <li><span class="dot" aria-hidden="true"></span>{person.availability}</li>
+    <li>{person.location} · open to relocating to Brussels</li>
+    <li>{person.languages}</li>
+  </ul>
+
+  <dl class="stats">
+    {headline.slice(0, 3).map((s) => (
+      <div class="stat">
+        <dt class="stat__label">{s.label}</dt>
+        <dd class="stat__value">{s.value}</dd>
+        <dd class="stat__note">{s.note}</dd>
+      </div>
+    ))}
+  </dl>
+</section>
+
+<style>
+  .hero { padding-top: clamp(48px, 9vw, 112px); padding-bottom: clamp(56px, 8vw, 96px); }
+  .hero__title {
+    margin-top: 20px; max-width: 15ch;
+    font-size: clamp(3rem, 9.5vw, 6.5rem); line-height: 0.95; letter-spacing: -0.02em;
+  }
+  .hero__title em { font-style: italic; color: var(--accent-ink); }
+  .hero__lead { margin-top: 28px; max-width: 46ch; font-size: clamp(1.125rem, 2.2vw, 1.3125rem); color: var(--ink-2); }
+  .hero__cta { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 24px; margin-top: 32px; }
+  .hero__link { min-height: 44px; display: inline-flex; align-items: center; font-weight: 550; }
+  .hero__meta { list-style: none; padding: 0; margin: 28px 0 0; display: flex; flex-wrap: wrap; gap: 8px 20px; color: var(--ink-2); font-size: 0.9375rem; }
+  .hero__meta li { display: inline-flex; align-items: center; gap: 8px; }
+  .dot { width: 8px; height: 8px; border-radius: 50%; background: var(--ok); box-shadow: 0 0 0 4px color-mix(in srgb, var(--ok) 20%, transparent); }
+
+  .stats {
+    margin: clamp(48px, 7vw, 80px) 0 0; display: grid; gap: 0; grid-template-columns: 1fr;
+    border-top: 1px solid var(--line);
+  }
+  .stat { display: grid; grid-template-columns: 1fr; padding: 20px 0; border-bottom: 1px solid var(--line); }
+  .stat__label { order: 2; font-weight: 600; }
+  .stat__value { order: 1; margin: 0; font-family: var(--font-serif); font-size: clamp(2.5rem, 6vw, 3.5rem); line-height: 1; letter-spacing: -0.01em; }
+  .stat__note { order: 3; margin: 4px 0 0; color: var(--ink-3); font-size: 0.875rem; }
+  @media (min-width: 860px) {
+    .stats { grid-template-columns: repeat(3, 1fr); border-bottom: 1px solid var(--line); }
+    .stat { border-bottom: 0; padding: 28px 28px 28px 0; }
+    .stat + .stat { border-left: 1px solid var(--line); padding-left: 28px; }
+  }
+</style>

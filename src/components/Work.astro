@@ -1,0 +1,118 @@
+---
+import { repos } from '../data/site';
+
+// T88Controller'dan gerçek kod parçası (ProtocolParser.kt): yorumlar çıkarıldı, `MatrixMessage.` öneki ve satırlar kısaltıldı.
+const t88Snippet = `fun parse(packet: ByteArray): MatrixMessage {
+    if (packet.size < 9) return Unknown
+
+    val functionId = packet[6].toInt()
+    val dataLength = packet[7].toInt() and 0xFF
+    if (packet.size < 8 + dataLength) return Unknown
+    val data = packet.sliceArray(8 until 8 + dataLength)
+
+    return when (functionId) {
+        0x04 -> if (data.size >= 3) VolumeUpdate(
+            data[0].toInt(), data[1].toInt(), data[2].toInt()
+        ) else Unknown
+        0x09 -> if (data.size >= 3) RoutingUpdate(
+            data[0].toInt(), data[1].toInt(), data[2].toInt() == 0x01
+        ) else Unknown
+        // … mute, phantom power, line/mic, scenes, camera
+        else -> Unknown
+    }
+}`;
+---
+<section class="section" id="work" aria-labelledby="work-title">
+  <div class="wrap">
+    <div class="section-head">
+      <p class="eyebrow">More work</p>
+      <h2 id="work-title">Mobile, hardware and vision</h2>
+      <p>Before focusing on LLM applications I shipped mobile apps end to end, and trained an object-detection model for my final-year project.</p>
+    </div>
+
+    <div class="work">
+      <article class="proj card proj--wide">
+        <div class="proj__body">
+          <p class="proj__meta mono">Internship · MrHolo · 2026</p>
+          <h3>T88Controller</h3>
+          <p class="muted">A Kotlin Multiplatform app for Android and iOS that controls a professional audio matrix over the network. Delivered from R&amp;D to release in two months.</p>
+          <ul class="proj__list">
+            <li>Asynchronous TCP sockets for bidirectional sync with the device</li>
+            <li>A parser that turns the vendor's binary frames into typed messages</li>
+            <li>One shared Compose Multiplatform UI; Codemagic builds the APK and IPA</li>
+          </ul>
+          <a class="proj__link" href={repos.t88} rel="noopener">View code</a>
+        </div>
+        <figure class="code">
+          <figcaption class="mono">ProtocolParser.kt (excerpt, shortened)</figcaption>
+          <pre><code>{t88Snippet}</code></pre>
+        </figure>
+      </article>
+
+      <article class="proj card proj--wide">
+        <div class="proj__body">
+          <p class="proj__meta mono">Final-year project · 2026</p>
+          <h3>Pedestrian-crossing violation detection</h3>
+          <p class="muted">A YOLO26 model I trained on 433 frames I labelled myself (crosswalk, pedestrian, car, motorcycle), plus rules on top: ByteTrack follows each vehicle, and a car on a crosswalk while a pedestrian is there is flagged.</p>
+          <p class="small muted proj__honest">
+            Honest limits: the rule counts a pedestrian waiting at the curb as "on the crossing", so it flags more than a human would,
+            and I don't quote accuracy numbers because the model was validated on its own training frames. Next step: a held-out test video.
+          </p>
+        </div>
+        <figure class="media">
+          <video src="/media/yolo-crossing.mp4" poster="/media/yolo-crossing-poster.jpg" muted loop playsinline autoplay preload="none"
+            aria-label="Detection output on a busy intersection: boxes around cars and pedestrians, flagged cars in red"></video>
+          <figcaption class="small muted">Prototype output on public webcam footage.</figcaption>
+        </figure>
+      </article>
+
+      <article class="proj card">
+        <div class="proj__body">
+          <p class="proj__meta mono">Mobile client · DUS Assistant</p>
+          <h3>The assistant as an app</h3>
+          <p class="muted">Kotlin Multiplatform client with persistent local chat history (Room), Ktor networking tested with MockEngine, and clear handling of rate limits and server errors.</p>
+        </div>
+        <figure class="media media--phone">
+          <video src="/media/dus-mobile.mp4" poster="/media/dus-mobile-poster.jpg" muted loop playsinline autoplay preload="none"
+            aria-label="Screen recording of the DUS Assistant mobile app answering a question"></video>
+        </figure>
+      </article>
+
+      <article class="proj card">
+        <div class="proj__body">
+          <p class="proj__meta mono">Internship · DivvyDrive · 2025</p>
+          <h3>DivvyDrive &amp; File Reader</h3>
+          <p class="muted">Two Android apps for cloud file management: MVVM with Hilt and Coroutines, 16 REST endpoints with ticket-based authorisation, chunked uploads for large files, and offline metadata extraction with Apache POI and PDFBox.</p>
+          <p class="proj__links">
+            <a class="proj__link" href={repos.divvy} rel="noopener">DivvyDrive</a>
+            <a class="proj__link" href={repos.fileReader} rel="noopener">File Reader</a>
+          </p>
+        </div>
+      </article>
+    </div>
+  </div>
+</section>
+
+<style>
+  .work { display: grid; gap: 20px; grid-template-columns: 1fr; }
+  @media (min-width: 900px) { .work { grid-template-columns: 1fr 1fr; } .proj--wide { grid-column: 1 / -1; } }
+
+  .proj { display: grid; gap: 24px; padding: clamp(20px, 3vw, 32px); overflow: hidden; }
+  @media (min-width: 900px) { .proj--wide { grid-template-columns: 5fr 7fr; align-items: center; } }
+  .proj__body { display: grid; gap: 12px; align-content: start; }
+  .proj__body h3 { font-family: var(--font-serif); font-weight: 400; font-size: clamp(1.75rem, 3vw, 2.25rem); line-height: 1.05; }
+  .proj__meta { font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.06em; color: var(--ink-3); }
+  .proj__list { margin: 0; padding-left: 1.1em; color: var(--ink-2); font-size: 0.9375rem; display: grid; gap: 4px; }
+  .proj__honest { padding-left: 12px; border-left: 2px solid var(--accent); }
+  .proj__link { display: inline-flex; align-items: center; min-height: 44px; font-weight: 600; }
+  .proj__links { display: flex; gap: 20px; }
+
+  .code { margin: 0; border-radius: var(--radius-sm); background: var(--code-bg); color: var(--code-ink); overflow: hidden; }
+  .code figcaption { padding: 10px 16px; font-size: 0.75rem; color: #9a978f; border-bottom: 1px solid #2a2c31; }
+  .code pre { margin: 0; padding: 16px; overflow-x: auto; font-family: var(--font-mono); font-size: 0.78rem; line-height: 1.6; }
+
+  .media { margin: 0; display: grid; gap: 8px; }
+  .media video { width: 100%; border-radius: var(--radius-sm); background: var(--surface-2); aspect-ratio: 16 / 9; object-fit: cover; }
+  .media--phone { justify-items: center; background: var(--surface-2); border-radius: var(--radius-sm); padding: 20px; }
+  .media--phone video { width: auto; max-height: 420px; aspect-ratio: 360 / 805; border-radius: 18px; }
+</style>

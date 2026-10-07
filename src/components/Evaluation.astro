@@ -1,0 +1,232 @@
+---
+import { evalSeries, evalMetrics, headline, repos } from '../data/site';
+
+// Yatay gruplanmış çubuk grafik: her ölçü bir grup, her yapılandırma bir çubuk. Ölçek 0–100 %.
+const W = 640;
+const labelW = 176;
+const plotW = W - labelW - 56;
+const bar = 14;
+const gap = 2;
+const groupGap = 30;
+const groupH = evalSeries.length * bar + (evalSeries.length - 1) * gap;
+const top = 8;
+const H = top + evalMetrics.length * groupH + (evalMetrics.length - 1) * groupGap + 30;
+const x = (v: number) => labelW + (v / 100) * plotW;
+const ticks = [0, 25, 50, 75, 100];
+
+// Çubuk ucu yuvarlak (4px), taban köşeleri kare.
+const barPath = (x0: number, y0: number, w: number, h: number) => {
+  const r = Math.min(4, w / 2, h / 2);
+  return `M${x0},${y0}H${x0 + w - r}Q${x0 + w},${y0} ${x0 + w},${y0 + r}V${y0 + h - r}Q${x0 + w},${y0 + h} ${x0 + w - r},${y0 + h}H${x0}Z`;
+};
+
+const steps = [
+  {
+    t: 'Build a test set I can trust',
+    d: '28 questions across four types (same-language, cross-lingual, follow-up, unanswerable). Every expected source page needed a verbatim quote, checked by a script against that exact page. Answers are scored by an LLM judge from a different model family, with a cost cap ($0.47 for 53 judge calls).',
+  },
+  {
+    t: 'Find the real weakness',
+    d: 'The baseline showed the gap: when the answer was only in the English books, a Turkish question was fully answered 7% of the time. The retriever searched in the question\'s language only.',
+  },
+  {
+    t: 'Add an agent only where it measurably helps',
+    d: 'A LangGraph agent that can search again in the other language took that case from 7% to 60%. Its limits live in code, not in the prompt: first search forced, at most 3 rounds, fallback to the chain, all unit-tested.',
+  },
+  {
+    t: 'Catch the regression, then fix it',
+    d: 'Faithfulness dropped from 79% to 64%: the agent added small unsupported details. A prompt naming those kinds of additions brought it back to 77% while keeping the gains. A fixed bilingual chain was also tested; it matched on cross-lingual questions but lost on same-language ones, so the agent was chosen.',
+  },
+];
+---
+<section class="section" id="evaluation" aria-labelledby="eval-title">
+  <div class="wrap">
+    <div class="section-head">
+      <p class="eyebrow">Case study · Evaluation</p>
+      <h2 id="eval-title">Measuring before shipping</h2>
+      <p>
+        Swapping a RAG chain for an agent sounds like an upgrade. I wanted numbers before believing it,
+        so I built an evaluation set first and let it decide.
+      </p>
+    </div>
+
+    <div class="ev">
+      <figure class="ev__chart card viz-root" data-viz>
+        <figcaption>
+          <h3>Chain vs. agent on the 28-question set</h3>
+          <p class="small muted">Share of answers, 3 runs per configuration. *Among answers that did not refuse.</p>
+        </figcaption>
+
+        <ul class="legend" aria-label="Legend">
+          {evalSeries.map((s, i) => (
+            <li><span class={`swatch s${i + 1}`} aria-hidden="true"></span>{s.name}</li>
+          ))}
+        </ul>
+
+        <svg viewBox={`0 0 ${W} ${H}`} role="img" aria-labelledby="ev-svg-title" class="ev__svg">
+          <title id="ev-svg-title">Grouped bar chart comparing the fixed chain, the first agent prompt and the final agent prompt on three measures. Values are listed in the table below.</title>
+          {ticks.map((t) => (
+            <g class="tick">
+              <line x1={x(t)} x2={x(t)} y1={top - 4} y2={H - 26} />
+              <text x={x(t)} y={H - 8} text-anchor="middle">{t}%</text>
+            </g>
+          ))}
+          {evalMetrics.map((m, gi) => {
+            const y0 = top + gi * (groupH + groupGap);
+            return (
+              <g>
+                <text class="grp" x={labelW - 14} y={y0 + groupH / 2 - 4} text-anchor="end">{m.label}</text>
+                <text class="grp-sub" x={labelW - 14} y={y0 + groupH / 2 + 12} text-anchor="end">{m.better} is better</text>
+                {evalSeries.map((s, si) => {
+                  const v = m.values[s.key];
+                  const y = y0 + si * (bar + gap);
+                  return (
+                    <g class="bar" tabindex="0" data-tip={`${s.name} · ${m.label.replace('*', '')}: ${v}%`}>
+                      <rect class="hit" x={labelW} y={y - 1} width={plotW + 40} height={bar + 2} />
+                      <path class={`mark s${si + 1}`} d={barPath(labelW, y, Math.max(1, x(v) - labelW), bar)} />
+                      <text class="val" x={x(v) + 6} y={y + bar - 3}>{v}%</text>
+                    </g>
+                  );
+                })}
+              </g>
+            );
+          })}
+          <line class="base" x1={labelW} x2={labelW} y1={top - 4} y2={H - 26} />
+        </svg>
+        <div class="tip" data-tip-el role="status" hidden></div>
+
+        <details class="ev__table">
+          <summary class="small">Show as table</summary>
+          <table>
+            <thead>
+              <tr><th scope="col">Measure</th>{evalSeries.map((s) => <th scope="col">{s.short}</th>)}</tr>
+            </thead>
+            <tbody>
+              {evalMetrics.map((m) => (
+                <tr><th scope="row">{m.label}</th>{evalSeries.map((s) => <td>{m.values[s.key]}%</td>)}</tr>
+              ))}
+              <tr><th scope="row">Median answer time (chain: single run)</th><td>3.0 s</td><td>6.1 s</td><td>5.3 s</td></tr>
+            </tbody>
+          </table>
+        </details>
+      </figure>
+
+      <ol class="ev__steps">
+        {steps.map((s, i) => (
+          <li>
+            <span class="ev__n mono">0{i + 1}</span>
+            <div>
+              <h3>{s.t}</h3>
+              <p class="muted">{s.d}</p>
+            </div>
+          </li>
+        ))}
+        <li class="ev__more">
+          <span class="ev__n mono">→</span>
+          <p>Every run, decision and rejected idea is written up in the <a href={repos.dusEval} rel="noopener">evaluation README</a>.</p>
+        </li>
+      </ol>
+    </div>
+
+    <dl class="more-stats">
+      {headline.slice(3).map((s) => (
+        <div>
+          <dt>{s.label}</dt>
+          <dd class="v">{s.value}</dd>
+          <dd class="small muted">{s.note}</dd>
+        </div>
+      ))}
+      <div>
+        <dt>unanswerable questions refused</dt>
+        <dd class="v">12 / 12</dd>
+        <dd class="small muted">it says "not in the sources" instead of guessing</dd>
+      </div>
+    </dl>
+  </div>
+</section>
+
+<script>
+  // Çubuğa gelince/odaklanınca küçük ipucu kutusu.
+  document.querySelectorAll<HTMLElement>('[data-viz]').forEach((fig) => {
+    const tip = fig.querySelector<HTMLElement>('[data-tip-el]')!;
+    const show = (el: Element, cx: number, cy: number) => {
+      tip.textContent = (el as HTMLElement).dataset.tip ?? '';
+      tip.hidden = false;
+      const r = fig.getBoundingClientRect();
+      tip.style.left = `${Math.min(cx - r.left + 12, r.width - tip.offsetWidth - 8)}px`;
+      tip.style.top = `${cy - r.top - 40}px`;
+    };
+    fig.querySelectorAll<SVGGElement>('.bar').forEach((g) => {
+      g.addEventListener('pointermove', (e) => show(g, e.clientX, e.clientY));
+      g.addEventListener('pointerleave', () => (tip.hidden = true));
+      g.addEventListener('focus', () => {
+        const b = g.getBoundingClientRect();
+        show(g, b.left + b.width / 3, b.top);
+      });
+      g.addEventListener('blur', () => (tip.hidden = true));
+    });
+  });
+</script>
+
+<style>
+  .viz-root {
+    --series-1: #2a78d6; --series-2: #eb6834; --series-3: #1baf7a;
+    --grid: #e7e3db;
+  }
+  @media (prefers-color-scheme: dark) {
+    .viz-root { --series-1: #3987e5; --series-2: #d95926; --series-3: #199e70; --grid: #2c2f35; }
+  }
+
+  .ev { display: grid; gap: clamp(32px, 5vw, 56px); align-items: start; }
+  @media (min-width: 1000px) { .ev { grid-template-columns: 7fr 5fr; } }
+
+  .ev__chart { position: relative; margin: 0; padding: clamp(18px, 3vw, 28px); }
+  .ev__chart figcaption { display: grid; gap: 4px; }
+  .legend { list-style: none; padding: 0; margin: 16px 0 12px; display: flex; flex-wrap: wrap; gap: 6px 18px; font-size: 0.8125rem; color: var(--ink-2); }
+  .legend li { display: inline-flex; align-items: center; gap: 8px; }
+  .swatch { width: 12px; height: 12px; border-radius: 3px; }
+  .s1 { fill: var(--series-1); background: var(--series-1); }
+  .s2 { fill: var(--series-2); background: var(--series-2); }
+  .s3 { fill: var(--series-3); background: var(--series-3); }
+
+  .ev__svg { width: 100%; height: auto; overflow: visible; font-family: var(--font-sans); }
+  .tick line { stroke: var(--grid); stroke-width: 1; }
+  .tick text { fill: var(--ink-3); font-size: 11px; }
+  .base { stroke: var(--ink-3); stroke-width: 1; }
+  .grp { fill: var(--ink); font-size: 13px; font-weight: 600; }
+  .grp-sub { fill: var(--ink-3); font-size: 11px; }
+  .val { fill: var(--ink-2); font-size: 11.5px; font-variant-numeric: tabular-nums; }
+  .hit { fill: transparent; }
+  .bar { outline: none; cursor: default; }
+  .bar:hover .mark, .bar:focus .mark { filter: brightness(1.08); stroke: var(--ink); stroke-width: 1; }
+  .bar:focus-visible .hit { stroke: var(--accent); stroke-width: 1.5; }
+  .tip {
+    position: absolute; pointer-events: none; padding: 6px 10px; border-radius: 8px;
+    background: var(--ink); color: var(--bg); font-size: 0.8125rem; white-space: nowrap; z-index: 2;
+  }
+
+  .ev__table { margin-top: 12px; }
+  .ev__table summary { cursor: pointer; color: var(--ink-2); min-height: 32px; display: inline-flex; align-items: center; }
+  .ev__table table { width: 100%; margin-top: 8px; border-collapse: collapse; font-size: 0.875rem; font-variant-numeric: tabular-nums; }
+  .ev__table th, .ev__table td { text-align: left; padding: 8px 6px; border-bottom: 1px solid var(--line); }
+  .ev__table thead th { color: var(--ink-3); font-weight: 600; }
+
+  .ev__steps { list-style: none; margin: 0; padding: 0; display: grid; gap: 0; border-top: 1px solid var(--line); }
+  .ev__steps li { display: grid; grid-template-columns: 44px 1fr; gap: 8px; padding: 20px 0; border-bottom: 1px solid var(--line); }
+  .ev__steps h3 { margin-bottom: 6px; }
+  .ev__steps p { font-size: 0.9375rem; }
+  .ev__n { color: var(--accent-ink); font-size: 0.875rem; padding-top: 2px; }
+  .ev__more p { font-size: 0.9375rem; }
+
+  .more-stats { margin: clamp(40px, 6vw, 64px) 0 0; display: grid; gap: 0; grid-template-columns: 1fr; border-top: 1px solid var(--line); }
+  .more-stats > div { padding: 20px 0; border-bottom: 1px solid var(--line); }
+  .more-stats dt { font-weight: 600; }
+  .more-stats dd { margin: 0; }
+  .more-stats .v { font-family: var(--font-serif); font-size: 2.25rem; line-height: 1.1; order: -1; }
+  .more-stats > div { display: flex; flex-direction: column; }
+  @media (min-width: 760px) {
+    .more-stats { grid-template-columns: repeat(3, 1fr); border-bottom: 1px solid var(--line); }
+    .more-stats > div { border-bottom: 0; padding: 24px 24px 24px 0; }
+    .more-stats > div + div { border-left: 1px solid var(--line); padding-left: 24px; }
+  }
+</style>

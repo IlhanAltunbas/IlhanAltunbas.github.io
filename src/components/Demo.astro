@@ -1,0 +1,221 @@
+---
+import { demoQuestions, repos } from '../data/site';
+---
+<section class="section" id="demo" aria-labelledby="demo-title">
+  <div class="wrap demo">
+    <div class="demo__intro">
+      <p class="eyebrow">Live demo · DUS Assistant</p>
+      <h2 id="demo-title">Ask the assistant I built</h2>
+      <p class="muted">
+        A bilingual (English / Turkish) RAG assistant for the Turkish dental specialty exam. It answers{' '}<strong>only</strong>{' '}from four periodontology textbooks (7,198 indexed passages) and says so when the
+        books don't cover a question, instead of guessing.
+      </p>
+      <ul class="demo__facts">
+        <li><span>Backend</span> FastAPI · LangChain · Azure OpenAI · Azure AI Search</li>
+        <li><span>Runs on</span> Azure Container Apps, scale-to-zero</li>
+        <li><span>Clients</span> Kotlin Multiplatform app and this page</li>
+      </ul>
+      <p class="small muted">
+        The server sleeps when idle to keep the cost at zero, so the first answer can take 20–30 seconds.
+        Questions are limited per visitor and per day. <a href={repos.dus} rel="noopener">Source on GitHub</a>.
+      </p>
+    </div>
+
+    <div class="chat card" data-chat>
+      <div class="chat__log" data-log role="log" aria-live="polite" aria-relevant="additions">
+        <p class="chat__empty" data-empty>Pick a question below or write your own.</p>
+      </div>
+
+      <div class="chat__suggest" data-suggest>
+        <p class="chat__suggest-title small muted">Try one</p>
+        <div class="chat__chips">
+          {demoQuestions.map((q, i) => (
+            <button type="button" class="chip chat__chip" data-q={q}>
+              {i === demoQuestions.length - 1 ? <span class="chat__tag">not in the books</span> : null}
+              {q}
+            </button>
+          ))}
+        </div>
+      </div>
+
+      <form class="chat__form" data-form>
+        <label class="visually-hidden" for="chat-input">Your question</label>
+        <textarea id="chat-input" data-input rows="2" maxlength="500"
+          placeholder="Ask about periodontology, in English or Turkish…" required></textarea>
+        <button class="btn btn--primary chat__send" type="submit" data-send>
+          <span>Ask</span>
+          <svg viewBox="0 0 16 16" aria-hidden="true"><path d="M2 8h11M9 4l4 4-4 4" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        </button>
+      </form>
+      <p class="chat__status small" data-status aria-live="polite"></p>
+    </div>
+  </div>
+</section>
+
+<script>
+  const API_URL = import.meta.env.PUBLIC_DUS_API_URL as string | undefined;
+  const API_KEY = import.meta.env.PUBLIC_DUS_API_KEY as string | undefined;
+
+  type Turn = { role: 'user' | 'assistant'; text: string };
+
+  const root = document.querySelector<HTMLElement>('[data-chat]');
+  if (root) {
+    const log = root.querySelector<HTMLElement>('[data-log]')!;
+    const empty = root.querySelector<HTMLElement>('[data-empty]');
+    const form = root.querySelector<HTMLFormElement>('[data-form]')!;
+    const input = root.querySelector<HTMLTextAreaElement>('[data-input]')!;
+    const send = root.querySelector<HTMLButtonElement>('[data-send]')!;
+    const status = root.querySelector<HTMLElement>('[data-status]')!;
+    const history: Turn[] = [];
+    let busy = false;
+
+    const escapeHtml = (s: string) =>
+      s.replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c]!);
+
+    // Küçük ve güvenli Markdown: önce kaçış, sonra **kalın** ve madde listeleri.
+    const renderAnswer = (text: string) => {
+      const lines = escapeHtml(text.trim()).split(/\r?\n/);
+      let html = '';
+      let list: 'ul' | 'ol' | null = null;
+      const close = () => { if (list) { html += `</${list}>`; list = null; } };
+      for (const raw of lines) {
+        const line = raw.replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>');
+        const bullet = line.match(/^\s*[-*•]\s+(.*)$/);
+        const num = line.match(/^\s*\d+[.)]\s+(.*)$/);
+        if (bullet || num) {
+          const kind = bullet ? 'ul' : 'ol';
+          if (list !== kind) { close(); html += `<${kind}>`; list = kind; }
+          html += `<li>${(bullet ?? num)![1]}</li>`;
+        } else if (line.trim() === '') {
+          close();
+        } else {
+          close();
+          html += `<p>${line}</p>`;
+        }
+      }
+      close();
+      return html;
+    };
+
+    const addBubble = (role: Turn['role'], html: string, extraClass = '') => {
+      empty?.remove();
+      const el = document.createElement('div');
+      el.className = `bubble bubble--${role} ${extraClass}`.trim();
+      el.innerHTML = html;
+      log.appendChild(el);
+      log.scrollTop = log.scrollHeight;
+      return el;
+    };
+
+    const messageFor = (statusCode: number) => {
+      if (statusCode === 429) return 'The demo has reached its question limit for now (it is capped to keep costs at zero). Please try again later.';
+      if (statusCode === 503) return 'The language model is busy right now. Please try again in a few seconds.';
+      if (statusCode === 401) return 'The demo is not configured correctly. The source code is on GitHub.';
+      return 'Something went wrong on the server. Please try again later.';
+    };
+
+    const ask = async (question: string) => {
+      if (busy || !question.trim()) return;
+      if (!API_URL || !API_KEY) {
+        addBubble('assistant', '<p>The live demo is not configured on this build.</p>', 'bubble--error');
+        return;
+      }
+      busy = true;
+      send.disabled = true;
+      input.value = '';
+      addBubble('user', `<p>${escapeHtml(question)}</p>`);
+      const pending = addBubble('assistant', '<p class="typing"><span></span><span></span><span></span></p>', 'bubble--pending');
+      status.textContent = 'Searching the textbooks…';
+      const slow = window.setTimeout(() => {
+        status.textContent = 'Waking up the server: it scales to zero when idle, so the first answer can take 20–30 seconds.';
+      }, 5000);
+
+      const controller = new AbortController();
+      const timeout = window.setTimeout(() => controller.abort(), 95_000);
+      const started = performance.now();
+      try {
+        const res = await fetch(`${API_URL}/ask`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', 'X-API-Key': API_KEY },
+          body: JSON.stringify({
+            question,
+            // Backend, mobil istemciyle aynı biçimi bekliyor: "User: …" / "Assistant: …", son 10 mesaj.
+            history: history.slice(-10).map((t) => `${t.role === 'user' ? 'User' : 'Assistant'}: ${t.text}`),
+          }),
+          signal: controller.signal,
+        });
+        if (!res.ok) throw Object.assign(new Error('http'), { statusCode: res.status });
+        const data = (await res.json()) as { answer?: string };
+        if (!data.answer) throw Object.assign(new Error('empty'), { statusCode: 500 });
+        pending.classList.remove('bubble--pending');
+        pending.innerHTML = renderAnswer(data.answer);
+        history.push({ role: 'user', text: question }, { role: 'assistant', text: data.answer });
+        const secs = ((performance.now() - started) / 1000).toFixed(1);
+        status.textContent = `Answered in ${secs} s. Follow-up questions use the conversation so far.`;
+      } catch (err) {
+        const code = (err as { statusCode?: number }).statusCode;
+        const aborted = (err as Error).name === 'AbortError';
+        pending.classList.remove('bubble--pending');
+        pending.classList.add('bubble--error');
+        pending.innerHTML = `<p>${aborted ? 'The server took too long to answer. Please try again.' : code ? messageFor(code) : 'Could not reach the server. Please check your connection and try again.'}</p>`;
+        status.textContent = '';
+      } finally {
+        window.clearTimeout(slow);
+        window.clearTimeout(timeout);
+        busy = false;
+        send.disabled = false;
+        log.scrollTop = log.scrollHeight;
+      }
+    };
+
+    form.addEventListener('submit', (e) => { e.preventDefault(); ask(input.value); });
+    input.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); form.requestSubmit(); }
+    });
+    root.querySelectorAll<HTMLButtonElement>('[data-q]').forEach((b) =>
+      b.addEventListener('click', () => ask(b.dataset.q!)),
+    );
+  }
+</script>
+
+<style>
+  .demo { display: grid; gap: clamp(32px, 5vw, 64px); align-items: start; }
+  @media (min-width: 980px) { .demo { grid-template-columns: 5fr 7fr; } }
+  .demo__intro { display: grid; gap: 18px; }
+  .demo__intro h2 { font-size: clamp(2.25rem, 5vw, 3.25rem); }
+  .demo__facts { list-style: none; margin: 4px 0; padding: 0; border-top: 1px solid var(--line); font-size: 0.9375rem; }
+  .demo__facts li { display: grid; grid-template-columns: 88px 1fr; gap: 12px; padding: 10px 0; border-bottom: 1px solid var(--line); }
+  .demo__facts span { font-family: var(--font-mono); font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.06em; color: var(--ink-3); padding-top: 3px; }
+
+  .chat { display: flex; flex-direction: column; min-height: 560px; overflow: hidden; }
+  .chat__log { flex: 1; display: flex; flex-direction: column; gap: 12px; padding: 20px; overflow-y: auto; max-height: 520px; min-height: 220px; }
+  .chat__empty { margin: auto; color: var(--ink-3); font-size: 0.9375rem; text-align: center; }
+
+  .chat__suggest { padding: 0 20px 16px; }
+  .chat__suggest-title { margin-bottom: 8px; }
+  .chat__chips { display: flex; flex-wrap: wrap; gap: 8px; }
+  .chat__chip { text-align: left; cursor: pointer; line-height: 1.4; padding: 8px 12px; font: inherit; font-size: 0.8125rem; color: var(--ink); }
+  .chat__chip:hover { border-color: var(--ink-3); }
+  .chat__tag { display: inline-block; margin-right: 6px; font-family: var(--font-mono); font-size: 0.6875rem; text-transform: uppercase; letter-spacing: 0.05em; color: var(--accent-ink); }
+
+  .chat__form { display: flex; gap: 10px; align-items: flex-end; padding: 14px; border-top: 1px solid var(--line); background: var(--surface-2); }
+  .chat__form textarea {
+    flex: 1; resize: none; min-height: 48px; padding: 12px 14px; border-radius: var(--radius-sm);
+    border: 1px solid var(--line); background: var(--surface); color: var(--ink); font: inherit; font-size: 0.9375rem; line-height: 1.45;
+  }
+  .chat__send[disabled] { opacity: 0.55; cursor: progress; }
+  .chat__status { min-height: 1.6em; padding: 0 16px 12px; background: var(--surface-2); color: var(--ink-3); }
+
+  :global(.bubble) { max-width: 88%; padding: 12px 16px; border-radius: 16px; font-size: 0.9375rem; line-height: 1.55; }
+  :global(.bubble p + p), :global(.bubble ul), :global(.bubble ol) { margin-top: 8px; }
+  :global(.bubble ul), :global(.bubble ol) { padding-left: 1.2em; margin-bottom: 0; }
+  :global(.bubble--user) { align-self: flex-end; background: var(--ink); color: var(--bg); border-bottom-right-radius: 4px; }
+  :global(.bubble--assistant) { align-self: flex-start; background: var(--surface-2); border-bottom-left-radius: 4px; }
+  :global(.bubble--error) { border: 1px solid var(--accent); background: transparent; }
+  :global(.typing) { display: flex; gap: 4px; padding: 4px 0; }
+  :global(.typing span) { width: 7px; height: 7px; border-radius: 50%; background: var(--ink-3); animation: blink 1.2s infinite ease-in-out; }
+  :global(.typing span:nth-child(2)) { animation-delay: .2s; }
+  :global(.typing span:nth-child(3)) { animation-delay: .4s; }
+  @keyframes blink { 0%, 80%, 100% { opacity: .25; } 40% { opacity: 1; } }
+  @media (prefers-reduced-motion: reduce) { :global(.typing span) { animation: none; opacity: .6; } }
+</style>

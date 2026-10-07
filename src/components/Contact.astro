@@ -1,0 +1,29 @@
+---
+import { person } from '../data/site';
+const year = new Date().getFullYear();
+---
+<footer class="contact" id="contact" aria-labelledby="contact-title">
+  <div class="wrap">
+    <p class="eyebrow contact__eyebrow">Contact</p>
+    <h2 id="contact-title">Looking for a junior AI or mobile engineer in Belgium?</h2>
+    <p class="contact__lead">I'm available immediately, based in Hainaut and open to relocating to Brussels. The fastest way to reach me is email.</p>
+    <div class="contact__cta">
+      <a class="btn btn--primary" href={`mailto:${person.email}`}>{person.email}</a>
+      <a class="contact__link" href={person.linkedin} rel="noopener">LinkedIn</a>
+      <a class="contact__link" href={person.github} rel="noopener">GitHub</a>
+      <a class="contact__link" href={person.cv} download>Download CV</a>
+    </div>
+    <p class="contact__foot small">© {year} {person.name} · Built with Astro, hosted on GitHub Pages.</p>
+  </div>
+</footer>
+
+<style>
+  .contact { background: var(--ink); color: var(--bg); padding-block: clamp(64px, 10vw, 120px) 40px; }
+  .contact__eyebrow { color: color-mix(in srgb, var(--bg) 70%, transparent); }
+  .contact h2 { margin-top: 18px; max-width: 18ch; font-size: clamp(2.5rem, 6.5vw, 4.5rem); line-height: 1; }
+  .contact__lead { margin-top: 20px; max-width: 52ch; color: color-mix(in srgb, var(--bg) 75%, transparent); font-size: 1.125rem; }
+  .contact__cta { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 24px; margin-top: 32px; }
+  .contact__cta .btn { word-break: break-all; }
+  .contact__link { min-height: 44px; display: inline-flex; align-items: center; font-weight: 550; color: var(--bg); }
+  .contact__foot { margin-top: clamp(56px, 8vw, 96px); padding-top: 20px; border-top: 1px solid color-mix(in srgb, var(--bg) 18%, transparent); color: color-mix(in srgb, var(--bg) 60%, transparent); }
+</style>

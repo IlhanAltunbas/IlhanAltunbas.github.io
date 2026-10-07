@@ -1,0 +1,38 @@
+---
+import { person } from '../data/site';
+---
+<header class="hdr">
+  <div class="wrap hdr__in">
+    <a class="hdr__name" href="#top">{person.name}</a>
+    <nav aria-label="Sections" class="hdr__nav">
+      <a href="#demo">Demo</a>
+      <a href="#evaluation">Evaluation</a>
+      <a href="#work">Work</a>
+      <a href="#contact">Contact</a>
+    </nav>
+    <a class="hdr__cv" href={person.cv} download>CV <span aria-hidden="true">↓</span></a>
+  </div>
+</header>
+
+<style>
+  .hdr {
+    position: sticky; top: 0; z-index: 20;
+    background: color-mix(in srgb, var(--bg) 88%, transparent);
+    backdrop-filter: saturate(1.4) blur(10px);
+    border-bottom: 1px solid var(--line);
+  }
+  .hdr__in { display: flex; align-items: center; gap: 24px; min-height: 60px; }
+  .hdr__name { font-weight: 650; text-decoration: none; letter-spacing: -0.01em; }
+  .hdr__nav { display: none; gap: 24px; margin-left: auto; font-size: 0.9375rem; }
+  .hdr__nav a { text-decoration: none; color: var(--ink-2); padding: 10px 0; }
+  .hdr__nav a:hover { color: var(--ink); }
+  .hdr__cv {
+    margin-left: auto; display: inline-flex; align-items: center; gap: 6px; min-height: 44px; padding: 0 16px;
+    border: 1px solid var(--line); border-radius: 999px; text-decoration: none; font-size: 0.875rem; font-weight: 600;
+    background: var(--surface);
+  }
+  @media (min-width: 760px) {
+    .hdr__nav { display: flex; }
+    .hdr__cv { margin-left: 8px; }
+  }
+</style>
