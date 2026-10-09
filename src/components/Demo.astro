@@ -124,6 +124,7 @@ import { demoQuestions, repos } from '../data/site';
       send.disabled = true;
       input.value = '';
       addBubble('user', `<p>${escapeHtml(question)}</p>`);
+      (window as { goatcounter?: { count?: (v: object) => void } }).goatcounter?.count?.({ path: 'demo-question', title: 'Demo question', event: true });
       const pending = addBubble('assistant', '<p class="typing"><span></span><span></span><span></span></p>', 'bubble--pending');
       status.textContent = 'Searching the textbooks…';
       const slow = window.setTimeout(() => {

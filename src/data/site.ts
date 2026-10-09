@@ -14,6 +14,11 @@ export const person = {
   cv: '/cv/Ilhan_Altunbas_CV.pdf',
 };
 
+// Çerezsiz ziyaretçi sayacı (GoatCounter). Boşsa betik eklenmez.
+export const analytics = {
+  goatcounter: 'https://ilhanaltunbas.goatcounter.com/count',
+};
+
 export const repos = {
   dus: 'https://github.com/IlhanAltunbas/DusAssistant',
   dusEval: 'https://github.com/IlhanAltunbas/DusAssistant/blob/main/dus-backend/eval/README.md',
